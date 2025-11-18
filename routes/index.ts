@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/auth.ts";
 import { WalletController } from "../controllers/wallet.ts";
-// import { AccountController } from "../controllers/acount";
+import { AccountController } from "../controllers/acount";
 import { UserController } from "../controllers/user.controller.ts";
 //import { TransactionEngine } from "../controllers/transaction.ts";
 
@@ -34,38 +34,19 @@ router.get("/transaction/:reference", (req, res) => wallet.checkTransactionStatu
 
 
 
-// Account creation
-//router.post("/account/create", AccountController.createAccount);
-
-// Fetch accounts
-//router.get("/account/user/:userId", AccountController.getUserAccounts);
-//router.get("/account/:accountId", AccountController.getAccountById);
-
-// Verification
-//router.post("/account/verify", AccountController.verifyAccount);
-
-// Account transactions
-//router.post("/account/transaction/create", AccountController.createAccountTransaction);
-
-// Reverse transaction
-//router.post("/account/transaction/:transactionId/reverse", AccountController.reverseTransaction);
-
-// Block/unblock
-//router.post("/account/:accountId/block", AccountController.blockAccount);
-//router.post("/account/:accountId/unblock", AccountController.unblockAccount);
-
-// Soft delete
-//router.delete("/account/:accountId", AccountController.deleteAccount);
-
-
-// Wallet funding (via account)
-//router.post("/account/wallet/fund", AccountController.fundWallet);
-
-// Wallet → Wallet transfer
-//router.post("/wallet/transfer", AccountController.walletTransfer);
-
-// Reverse transaction
-//router.post("/transaction/:transactionId/reverse", AccountController.reverseTransaction);
+// Account routes
+router.post("/account/create", AccountController.createAccount);
+router.get("/account/user/:userId", AccountController.getUserAccounts);
+router.get("/account/:accountId", AccountController.getAccountById);
+router.post("/account/verify", AccountController.verifyAccount);
+router.post("/account/transaction/create", AccountController.createAccountTransaction);
+router.post("/account/transaction/:transactionId/reverse", AccountController.reverseTransaction);
+router.post("/account/:accountId/block", AccountController.blockAccount);
+router.post("/account/:accountId/unblock", AccountController.unblockAccount);
+router.delete("/account/:accountId", AccountController.deleteAccount);
+router.post("/account/wallet/fund", AccountController.fundWallet);
+router.post("/wallet/transfer", AccountController.walletTransfer);
+router.post("/transaction/:transactionId/reverse", AccountController.reverseTransaction);
 
 
 export default router;

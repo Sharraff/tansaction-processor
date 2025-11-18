@@ -1,7 +1,7 @@
 import express from "express";
-import { connectDB } from "./schema/database";
-import router from "./routes/index";
-import { sessionMiddleware } from "./config/session";
+import { connectDB } from "./schema/database.ts";
+import router from "./routes/index.ts";
+import { sessionMiddleware } from "./config/session.ts";
 
 
 const app = express();

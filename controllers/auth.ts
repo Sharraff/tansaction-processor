@@ -1,6 +1,8 @@
-import { Request, Response } from "express";
-import "../config/session"; // Load session type augmentation
-import { User } from "../schema/user";
+//import { Request, Response } from "express";
+import express from 'express';
+import type { Request, Response } from 'express';
+import "../config/session.ts";
+import { User } from "../schema/user.ts";
 import bcrypt from "bcryptjs";
 
 
@@ -8,15 +10,12 @@ import bcrypt from "bcryptjs";
 
 export class AuthController {
 
-    // REGISTER
-    static async register(req: Request, res: Response) {
+    static async register(req: Request, res: Response) { // register
         try {
             const {
                 type,
                 firstName,
                 lastName,
-                otherNames,
-                tag,
                 emailAddress,
                 phoneNumber,
                 password,
@@ -28,20 +27,27 @@ export class AuthController {
                 return res.status(400).json({ message: "Email already exists" });
             }
 
-            const tagExists = await User.findOne({ tag });
-            if (tagExists) {
-                return res.status(400).json({ message: "Tag already exists" });
+            // Auto-generate unique tag
+            const baseTag = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`;
+            let uniqueTag = baseTag;
+            let counter = 1;
+
+            while (await User.findOne({ tag: uniqueTag })) {
+                uniqueTag = `${baseTag}-${counter++}`;
             }
+
+            // hash password
+            const hashedPassword = await bcrypt.hash(password, 10);
+
 
             const user = new User({
                 type,
                 firstName,
                 lastName,
-                otherNames,
-                tag,
                 emailAddress,
                 phoneNumber,
-                password,
+                password: hashedPassword,
+                tag: uniqueTag
             });
 
             await user.save();
@@ -51,7 +57,6 @@ export class AuthController {
                 user: {
                     id: user._id,
                     email: user.emailAddress,
-                    tag: user.tag
                 }
             });
 
@@ -61,8 +66,8 @@ export class AuthController {
         }
     }
 
-    // LOGIN
-    static async login(req: Request, res: Response) {
+
+    static async login(req: Request, res: Response) { // login
         try {
             const { emailAddress, password } = req.body;
 
@@ -91,7 +96,6 @@ export class AuthController {
                 user: {
                     id: user._id,
                     email: user.emailAddress,
-                    tag: user.tag
                 }
             });
 

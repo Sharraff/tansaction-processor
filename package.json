@@ -2,7 +2,8 @@
   "name": "tansaction-processor",
   "version": "1.0.0",
   "description": "An end to end financials transaction processor.",
-  "main": "index.js",
+  "main": "main.tsc",
+  "type": "module",
   "scripts": {
     "start": "node main.ts",
     "dev": "nodemon main.ts",

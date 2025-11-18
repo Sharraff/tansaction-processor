@@ -7,7 +7,7 @@ export const AccountSchema = new mongoose.Schema({
     transaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
 	bankCode: { type: String, required: true },
     bankName: { type: String, required: true },
-    provider: { type: String, default: 'SAFEHAVEN' },
+    provider: { type: String, default: 'ACCESS' },
     providerId: String,
 	accountNumber: { type: String, required: true },
 	accountName: { type: String, required: true },
@@ -108,6 +108,7 @@ export const VerifyAccountSchema = new mongoose.Schema({
     }
 });
 
-export const Account = mongoose.model('Account', AccountSchema);
-export const AccountTransaction = mongoose.model('AccountTransaction', AccountTransactionSchema);
-export const VerifyAccount = mongoose.model('Account', VerifyAccountSchema);
+//export const Account = mongoose.model('Account', AccountSchema);
+export const Account = mongoose.models.Account || mongoose.model("Account", AccountSchema);
+export const AccountTransaction = mongoose.models.AccountTransaction || mongoose.model('AccountTransaction', AccountTransactionSchema);
+export const VerifyAccount = mongoose.models.VerifyAccount || mongoose.model('Account', VerifyAccountSchema);

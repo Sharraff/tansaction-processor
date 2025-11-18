@@ -1,11 +1,35 @@
-import { Wallet } from "../schema/wallet";
-import { Request, Response } from "express";
+import { Wallet } from "../schema/wallet.ts";
+import type { Request, Response } from "express";
 import mongoose from "mongoose";
 
 export class WalletController {
 
-    // GET ALL USER WALLETS
-    async getUserWallets(req: Request, res: Response) {
+    // CREATE WALLET
+    async createWallet(req: Request, res: Response) {
+        try {
+        const { userId, name, type, currency } = req.body;
+
+        if (!userId || !name || !type || !currency) {
+            return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        const wallet = await Wallet.create({
+            user: userId,
+            name,
+            type,       // e.g., 'fiat' or crypto
+            currency,   // e.g., 'NGN', 'USD'
+            balance: 5000  // default starting balance
+        });
+
+        res.status(201).json({ message: "Wallet created successfully", wallet });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+}
+
+
+    async getUserWallets(req: Request, res: Response) { // get user wallet by userID
         try {
             const { userId } = req.params;
             const wallets = await Wallet.find({ user: userId, isDeleted: false });
@@ -15,8 +39,8 @@ export class WalletController {
         }
     }
 
-    // GET WALLET BY ID
-    async getWalletById(req: Request, res: Response) {
+
+    async getWalletById(req: Request, res: Response) { // get wallet by wallet id
         try {
             const { walletId } = req.params;
             const wallet = await Wallet.findById(walletId);
@@ -27,8 +51,7 @@ export class WalletController {
         }
     }
 
-    // INITIATE FUNDING
-    async initiateFunding(req: Request, res: Response) {
+    async initiateFunding(req: Request, res: Response) { // initiate wallet funding from external provider
         try {
             const { walletId, amount, provider } = req.body;
 
@@ -46,8 +69,8 @@ export class WalletController {
         }
     }
 
-    // CREDIT WALLET
-    async creditWallet(req: Request, res: Response) {
+
+    async creditWallet(req: Request, res: Response) { //credit wallet
         try {
             const { walletId, amount } = req.body;
             const wallet = await Wallet.findByIdAndUpdate(
@@ -61,8 +84,7 @@ export class WalletController {
         }
     }
 
-    // INTERNAL TRANSFER
-    async transfer(req: Request, res: Response) {
+    async transfer(req: Request, res: Response) { // internal transfer
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
@@ -94,8 +116,7 @@ export class WalletController {
         }
     }
 
-    // LIST BANKS
-    async listBanks(req: Request, res: Response) {
+    async listBanks(req: Request, res: Response) { // list of available banks
         res.json([
             { name: "Access Bank", code: "044" },
             { name: "GTBank", code: "058" },
@@ -103,8 +124,8 @@ export class WalletController {
         ]);
     }
 
-    // VERIFY ACCOUNT
-    async verifyAccount(req: Request, res: Response) {
+
+    async verifyAccount(req: Request, res: Response) { //verify account before transaction
         const { bankCode, accountNumber } = req.body;
         res.json({
             bankCode,
@@ -114,8 +135,7 @@ export class WalletController {
         });
     }
 
-    // CHECK TRANSACTION STATUS
-    async checkTransactionStatus(req: Request, res: Response) {
+    async checkTransactionStatus(req: Request, res: Response) {  // check transaction status
         const { reference } = req.params;
         res.json({
             reference,

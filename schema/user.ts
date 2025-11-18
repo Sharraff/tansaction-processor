@@ -40,11 +40,12 @@ export const UserSchema = new mongoose.Schema({
     },
 	firstName: String,
 	lastName: String,
-	otherNames: String,
     tag: {
         type: String,
         unique: true,
         required: true,
+        trim: true,
+		index: true
     },
 	emailAddress: {
         type: String,
@@ -58,7 +59,7 @@ export const UserSchema = new mongoose.Schema({
 	},
 	bvn: { type: String, default: null },
 	nin: { type: String, default: null },
-	password: { type: String, select: false },
+	password: { type: String, required: true, select: false },
 	role: { type: String, default: 'User' },
 	status: { type: String, default: 'Active' },
 	gender: { type: String, default: 'Not Specified' },

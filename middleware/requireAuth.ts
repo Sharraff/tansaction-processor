@@ -1,11 +1,45 @@
-import { Request, Response, NextFunction } from "express";
+import dotenv from "dotenv";
+dotenv.config();
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
-    if (!req.session.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-    }
-    next();
+
+//import { Request, Response, NextFunction } from "express";
+import "../types/express.d.ts";
+import type { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+
+
+
+export interface AuthRequest extends Request {
+    userId?: string;
 }
+
+export const requireAuth = (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+) => {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader?.startsWith("Bearer ") 
+        ? authHeader.substring(7)
+        : null;
+
+    if (!token) {
+        return res.status(401).json({ message: "Access token missing" });
+    }
+
+    try {
+        const decoded = jwt.verify(
+            token,
+            process.env.JWT_ACCESS_SECRET!
+        ) as { userId: string };
+
+        req.userId = decoded.userId;
+        next();
+
+    } catch (err) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+    }
+};
 
 
 // transaction routes
@@ -37,3 +71,14 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 //         res.status(400).json({ message: error.message || "Unable to transfer" });
 //     }
 // });
+
+// export function requireAuth(req: Request, res: Response, next: NextFunction) {
+//     if (!req.session.userId) {
+//         return res.status(401).json({ error: "Authentication required" });
+//     }
+//     // Set req.user from session
+//     req.user = {
+//         id: req.session.userId
+//     };
+//     next();
+// }

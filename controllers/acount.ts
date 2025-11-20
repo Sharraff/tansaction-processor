@@ -1,8 +1,9 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
+import "../types/express.d.ts";
 import mongoose from "mongoose";
-import { Account, AccountTransaction, VerifyAccount } from "../schema/account";
-import { TransactionEngine } from "./transaction";
-import { Wallet } from "../schema/wallet";
+import { Account, AccountTransaction, VerifyAccount } from "../schema/account.ts";
+import { TransactionEngine } from "./transaction.ts";
+import { Wallet } from "../schema/wallet.ts";
 
 // Generate random references
 const generateRef = (prefix: string) =>
@@ -11,7 +12,7 @@ const generateRef = (prefix: string) =>
 export class AccountController {
 
     
-    static async createAccount(req: Request, res: Response) {
+    static async createAccount(req: Request, res: Response) { // create account
         try {
             const {
                 user,
@@ -35,7 +36,7 @@ export class AccountController {
                 accountNumber,
                 accountName,
                 amount,
-                provider: provider || "SAFEHAVEN",
+                provider: provider || "ACCESS",
                 reference,
                 expiryDate,
                 validFor: 24,
@@ -55,7 +56,7 @@ export class AccountController {
 
 
     
-    static async getUserAccounts(req: Request, res: Response) {
+    static async getUserAccounts(req: Request, res: Response) { // get a users account by userID
         try {
             const { userId } = req.params;
 
@@ -74,7 +75,7 @@ export class AccountController {
 
 
     
-    static async getAccountById(req: Request, res: Response) {
+    static async getAccountById(req: Request, res: Response) { // get a users account by accountID
         try {
             const { accountId } = req.params;
 
@@ -92,7 +93,7 @@ export class AccountController {
 
 
    
-    static async verifyAccount(req: Request, res: Response) {
+    static async verifyAccount(req: Request, res: Response) { // verify user account
         try {
             const { user, accountNumber, bankCode, bankName } = req.body;
 
@@ -121,73 +122,130 @@ export class AccountController {
         }
     }
 
-
-
-    static async createAccountTransaction(req: Request, res: Response) {
+    static async externalTransfer(req: Request, res: Response) {
         try {
             const {
-                user,
-                account,
-                wallet,
-                amount,
-                narration,
-                sourceBankCode,
-                sourceBankName,
-                debitAccountName,
-                debitAccountNumber
+              accountId,
+              bankCode,
+              bankName,
+              creditAccountNumber,
+              creditAccountName,
+              amount,
+              narration
             } = req.body;
+          
+            if (!req.user) {
+                return res.status(401).json({ message: "Authentication required" });
+            }
+            
+            const userId = req.user.id; // from auth middleware
+          
+            // 1. Fetch sender account
+            const senderAccount = await Account.findOne({
+              _id: accountId,
+              user: userId,
+              isDeleted: false,
+              isBlocked: false
+            });
 
-            const internalReference = generateRef("INT");
-            const externalReference = generateRef("EXT");
+            if (!senderAccount) {
+                return res.status(404).json({ message: "Account not found or blocked" });
+            }
+          
+            // 2. Check balance
+            if (senderAccount.amount < amount) {
+                return res.status(400).json({ message: "Insufficient account balance" });
+            }
+          
+            // 3. Debit internal account balance
+            senderAccount.amount -= amount;
+            await senderAccount.save();
+          
+            // 4. Make external transfer (placeholder API)
+            const externalReference = "EXT-" + Date.now();
+            let providerResponse;
 
-            const txn = await AccountTransaction.create({
-                user,
-                Account: account,
-                wallet,
-                amount,
-                narration,
-                sourceBankCode,
-                sourceBankName,
-                debitAccountName,
-                debitAccountNumber,
-                creditAccountName: "Wallet",
-                creditAccountNumber: "INTERNAL",
-                provider: "ACCESS",
-                providerResponse: {},
-                status: "success",
-                internalReference,
+
+            try {
+              // simulate external call
+              providerResponse = {
+                status: "SUCCESS",
+                reference: externalReference,
+                message: "Transfer delivered to bank network"
+              };
+
+
+            } catch (err: any) {
+                // rollback balance
+                senderAccount.amount += amount;
+                await senderAccount.save();
+
+                return res.status(500).json({
+                  message: "External bank transfer failed",
+                  error: err.message
+                });
+            }
+
+            // 5. Create AccountTransaction record
+            const internalReference = "INT-" + Date.now();
+
+            const trx = await AccountTransaction.create({
+                user: userId,
+                Account: senderAccount._id,
+                wallet: senderAccount.wallet,
                 externalReference,
-                createdAt: new Date()
+                internalReference,
+                provider: senderAccount.provider,
+                providerId: senderAccount.providerId,
+                sourceBankCode: senderAccount.bankCode,
+                sourceBankName: senderAccount.bankName,
+                creditAccountName,
+                creditAccountNumber,
+                debitAccountName: senderAccount.accountName,
+                debitAccountNumber: senderAccount.accountNumber,
+                narration,
+                amount,
+                fees: 10,
+                vat: 5,
+                responseMessage: providerResponse,
+                status: providerResponse,
+                providerResponse,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                isDeleted: false
             });
 
-            return res.status(201).json({
-                message: "Transaction recorded",
-                txn
+            return res.status(200).json({
+               message: "External transfer successful",
+               transaction: trx
             });
-
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: "Server error" });
+        } catch (error: any) {
+            return res.status(500).json({
+                message: "Internal server error",
+                error: error.message
+            });
         }
     }
 
 
-
-    static async reverseTransaction(req: Request, res: Response) {
+    static async reverseTransaction(req: Request, res: Response) {  // reverse a transaction
         try {
             const { transactionId } = req.params;
 
-            const txn = await AccountTransaction.findById(transactionId);
-            if (!txn) return res.status(404).json({ message: "Transaction not found" });
+            //const txn = await AccountTransaction.findById(transactionId);
+            //if (!txn) return res.status(404).json({ message: "Transaction not found" });
 
-            txn.isReversed = true;
-            txn.reversalReference = generateRef("REV");
-            txn.status = "reversed";
-            await txn.save();
+            // txn.isReversed = true;
+            // txn.reversalReference = generateRef("REV");
+            // txn.status = "reversed";
+            // await txn.save();
+
+            const reversed = TransactionEngine.reverseTransaction(transactionId);
 
             return res.json({
                 message: "Transaction reversed",
-                txn
+                //txn
+                reversed
             });
 
         } catch (err) {
@@ -196,8 +254,8 @@ export class AccountController {
         }
     }
 
-    // Admin 
-    static async blockAccount(req: Request, res: Response) {
+
+    static async blockAccount(req: Request, res: Response) { // block user  account
         try {
             const { accountId } = req.params;
 
@@ -215,7 +273,7 @@ export class AccountController {
         }
     }
 
-    static async unblockAccount(req: Request, res: Response) {
+    static async unblockAccount(req: Request, res: Response) { // unblock user account
         try {
             const { accountId } = req.params;
 
@@ -233,15 +291,14 @@ export class AccountController {
         }
     }
 
-    // FUND WALLET THROUGH ACCOUNT
-    static async fundWallet(req: Request, res: Response) {
+    static async fundWallet(req: Request, res: Response) { // fund wallet through account
         try {
             const {
                 user,
                 walletId,
                 accountId,
                 amount,
-                narration = "Account funding",
+                narration = "Wallet funding from account",
                 bankCode,
                 bankName,
                 debitAccountName,
@@ -257,6 +314,8 @@ export class AccountController {
                 meta: { bankCode, bankName, debitAccountName, debitAccountNumber }
             });
 
+
+
             return res.json({
                 message: "Wallet funded successfully",
                 transaction: txn
@@ -269,29 +328,29 @@ export class AccountController {
     }
 
 
-    // WALLET TO WALLET TRANSFER
-    static async walletTransfer(req: Request, res: Response) {
-        try {
-            const { senderWalletId, receiverWalletId, amount } = req.body;
+    // // WALLET TO WALLET TRANSFER
+    // static async walletTransfer(req: Request, res: Response) { 
+    //     try {
+    //         const { senderWalletId, receiverWalletId, amount } = req.body;
 
-            const result = await TransactionEngine.transferAtomic(
-                senderWalletId,
-                receiverWalletId,
-                amount
-            );
+    //         const result = await TransactionEngine.transferAtomic(
+    //             senderWalletId,
+    //             receiverWalletId,
+    //             amount
+    //         );
 
-            return res.json({
-                message: "Transfer successful",
-                result
-            });
+    //         return res.json({
+    //             message: "Transfer successful",
+    //             result
+    //         });
 
-        } catch (err) {
-            return res.status(400).json({ message: err });
-        }
-    }
+    //     } catch (err) {
+    //         return res.status(400).json({ message: err });
+    //     }
+    // }
 
 
-    static async deleteAccount(req: Request, res: Response) {
+    static async deleteAccount(req: Request, res: Response) { // delete account
         try {
             const { accountId } = req.params;
 
@@ -308,5 +367,7 @@ export class AccountController {
             res.status(500).json({ message: "Server error" });
         }
     }
+
+
 }
 

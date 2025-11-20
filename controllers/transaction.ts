@@ -1,7 +1,14 @@
 import mongoose from "mongoose";
-import { Wallet } from "../schema/wallet";
-import { AccountTransaction } from "../schema/account";
-import { Account } from "../schema/account";
+//import { Request, Response } from "express";
+import { Wallet } from "../schema/wallet.ts";
+import { AccountTransaction } from "../schema/account.ts";
+//import { Account } from "../schema/account.ts";
+
+
+// Generate random references
+const generateRef = (prefix: string) =>
+    `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
 
 export class TransactionEngine {
 
@@ -153,4 +160,54 @@ export class TransactionEngine {
             throw err;
         }
     }
+
+
+    // static async createAccountTransaction(req: Request, res: Response) {
+    //     try {
+    //         const {
+    //             user,
+    //             account,
+    //             wallet,
+    //             amount,
+    //             narration,
+    //             sourceBankCode,
+    //             sourceBankName,
+    //             debitAccountName,
+    //             debitAccountNumber
+    //         } = req.body;
+
+    //         const internalReference = generateRef("INT");
+    //         const externalReference = generateRef("EXT");
+
+    //         const txn = await AccountTransaction.create({
+    //             user,
+    //             Account: account,
+    //             wallet,
+    //             amount,
+    //             narration,
+    //             sourceBankCode,
+    //             sourceBankName,
+    //             debitAccountName,
+    //             debitAccountNumber,
+    //             creditAccountName: "Wallet",
+    //             creditAccountNumber: "INTERNAL",
+    //             provider: "ACCESS",
+    //             providerResponse: {},
+    //             status: "success",
+    //             internalReference,
+    //             externalReference,
+    //             createdAt: new Date()
+    //         });
+
+    //         return res.status(201).json({
+    //             message: "Transaction recorded",
+    //             txn
+    //         });
+
+    //     } catch (err) {
+    //         console.error(err);
+    //         return res.status(500).json({ message: "Server error" });
+    //     }
+    // }
 }
+

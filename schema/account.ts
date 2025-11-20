@@ -108,7 +108,6 @@ export const VerifyAccountSchema = new mongoose.Schema({
     }
 });
 
-//export const Account = mongoose.model('Account', AccountSchema);
-export const Account = mongoose.models.Account || mongoose.model("Account", AccountSchema);
-export const AccountTransaction = mongoose.models.AccountTransaction || mongoose.model('AccountTransaction', AccountTransactionSchema);
-export const VerifyAccount = mongoose.models.VerifyAccount || mongoose.model('Account', VerifyAccountSchema);
+export const Account = mongoose.model('Account', AccountSchema);
+export const AccountTransaction = mongoose.model('AccountTransaction', AccountTransactionSchema);
+export const VerifyAccount = mongoose.model('VerifyAccount', VerifyAccountSchema);
